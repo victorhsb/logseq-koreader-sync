@@ -2,11 +2,26 @@ import '@logseq/libs'
 import { SettingSchemaDesc, BlockEntity, IBatchBlock, BlockUUID } from '@logseq/libs/dist/LSPlugin'
 import { parse as luaparse } from 'luaparse'
 import { ProgressNotification } from './progress'
-import { get as getStorage, set as setStorage } from 'idb-keyval';
+import { get as getStorage, set as setStorage, del as delStorage } from 'idb-keyval';
 
-let settings: SettingSchemaDesc[] = []
+let settings: SettingSchemaDesc[] = [
+  {
+    key: "rememberDirectory",
+    default: true,
+    description: "Remember saved path to KOReader files. Uncheck to clear saved path, but remember to switch it back on after.",
+    title: "Remember KOReader Path",
+    type: "boolean",
+  },
+]
 
 const delay = (t = 100) => new Promise(r => setTimeout(r, t))
+
+function onSettingsChange() {
+  console.log("settings changed.");
+  if (!(logseq.settings?.rememberDirectory)) {
+    delStorage('logseq_koreader_sync__directoryHandle')
+  }
+}
 
 function truncateString(str, length) {
   if (!str) {
@@ -267,6 +282,9 @@ function main () {
   logseq.useSettingsSchema(settings)
   logseq.provideModel({
     async syncKOReader () {
+      onSettingsChange();
+      logseq.onSettingsChanged(onSettingsChange);
+
       const info = await logseq.App.getUserConfigs()
       if (loading) return
 
@@ -326,7 +344,10 @@ function main () {
           console.error(e);
           return;
         }
-        setStorage('logseq_koreader_sync__directoryHandle', directoryHandle);
+
+        if (logseq.settings?.rememberDirectory) {
+          setStorage('logseq_koreader_sync__directoryHandle', directoryHandle);
+        }
       }
 
       if (!directoryHandle) {
