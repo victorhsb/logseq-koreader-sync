@@ -37,6 +37,18 @@ let settings: SettingSchemaDesc[] = [
 
 const delay = (t = 100) => new Promise(r => setTimeout(r, t))
 
+async function waitForPage(expectedPageName: string, maxWait: number = 5000): Promise<BlockEntity> {
+  const startTime = Date.now();
+  while (Date.now() - startTime < maxWait) {
+    const currentPage = await logseq.Editor.getCurrentPage();
+    if (currentPage?.originalName === expectedPageName) {
+      return currentPage;
+    }
+    await delay(100);
+  }
+  throw new Error(`Page "${expectedPageName}" not ready within ${maxWait}ms`);
+}
+
 function onSettingsChange() {
   console.log("settings changed.");
   if (!(logseq.settings?.rememberDirectory)) {
@@ -319,16 +331,13 @@ function main () {
       if (loading) return
 
       const pageName = '_logseq-koreader-sync'
-      const syncTimeLabel = (new Date()).toLocaleString() // date and time as of now
 
       logseq.App.pushState('page', { name: pageName })
 
-      await delay(300) // wait for our UI elements to exist. FIXME: replace with check/sleep loop
+      const currentPage = await waitForPage(pageName);
+      const syncTimeLabel = (new Date()).toLocaleString()
 
       loading = true
-
-      const currentPage = await logseq.Editor.getCurrentPage()
-      if (currentPage?.originalName !== pageName) throw new Error('page error')
 
       const pageBlocksTree = await logseq.Editor.getCurrentPageBlocksTree()
 

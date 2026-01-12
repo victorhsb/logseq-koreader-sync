@@ -64,31 +64,48 @@ const COLLAPSE_BLOCKS = logseq.settings?.collapseBookmarks ?? true;
 
 ---
 
-### 1.3 Replace Fixed Delay with Proper Wait Loop
-**File**: `src/index.ts:311`
+### ✅ 1.3 Replace Fixed Delay with Proper Wait Loop **COMPLETED**
+**File**: `src/index.ts:338`
 
-**Current State**:
+**Original State**:
 ```typescript
 await delay(300) // wait for our UI elements to exist. FIXME: replace with check/sleep loop
 ```
 
-**Proposed Implementation**:
-- Replace with a polling wait function:
-  ```typescript
-  async function waitForElement(selector: string, maxWait: number = 5000): Promise<void> {
-    const start = Date.now();
-    while (Date.now() - start < maxWait) {
-      const element = document.querySelector(selector);
-      if (element) return;
-      await delay(100);
+**Implementation Completed**:
+- ✅ Added `waitForPage()` polling function after `delay()` at line 40
+- ✅ Replaced fixed delay + getCurrentPage() + page check with single `waitForPage()` call
+- ✅ Removed unnecessary duplicate `getCurrentPage()` call
+
+**Current State**:
+```typescript
+async function waitForPage(expectedPageName: string, maxWait: number = 5000): Promise<BlockEntity> {
+  const startTime = Date.now();
+  while (Date.now() - startTime < maxWait) {
+    const currentPage = await logseq.Editor.getCurrentPage();
+    if (currentPage?.originalName === expectedPageName) {
+      return currentPage;
     }
-    throw new Error(`Element ${selector} not found within ${maxWait}ms`);
+    await delay(100);
   }
-  ```
-- Use it in syncKOReader:
-  ```typescript
-  await waitForElement(`[data-page-id="${currentPage.uuid}"]`);
-  ```
+  throw new Error(`Page "${expectedPageName}" not ready within ${maxWait}ms`);
+}
+
+// Usage in syncKOReader():
+logseq.App.pushState('page', { name: pageName })
+
+const currentPage = await waitForPage(pageName);
+const syncTimeLabel = (new Date()).toLocaleString()
+
+loading = true
+```
+
+**Implementation Details**:
+- `waitForPage()` polls for page readiness using Logseq API every 100ms
+- Returns the page object directly when ready, eliminating redundant API call
+- Times out after 5 seconds with descriptive error message
+- More reliable: eliminates race condition on slow systems
+- More efficient: no unnecessary waiting on fast systems
 
 **Impact**: More reliable synchronization with UI, less chance of race conditions, better performance (no unnecessary waiting).
 
@@ -704,7 +721,7 @@ If user wants to revert to single-page sync:
 ### Immediate (This Sprint) ✅
 - ✅ 1.1 Make Description Length Configurable
 - ✅ 1.2 Make Block Collapse Configurable
-- 1.3 Replace Fixed Delay with Proper Wait Loop
+- ✅ 1.3 Replace Fixed Delay with Proper Wait Loop
 - 1.4 Improve Error Handling and User Feedback
 
 ### Short Term (Next 1-2 Sprints)
@@ -763,4 +780,4 @@ If user wants to revert to single-page sync:
 ---
 
 *Last Updated: 2025-01-12*
-*Plan Status: Implementation in Progress - 1.1 and 1.2 completed*
+*Plan Status: Implementation in Progress - 1.1, 1.2, and 1.3 completed*
