@@ -228,7 +228,7 @@ function lua_to_block(text: string): IBatchBlock | null {
     luaVersion: 'LuaJIT'
   });
 
-  var metadata = {};
+  const metadata = {};
 
   for (const field in (ast.body[0] as any).arguments[0].fields) {
     const target = (ast.body[0] as any).arguments[0].fields[field]
@@ -282,6 +282,14 @@ async function* walkDirectory(directoryHandle: any) { // DirectoryHandle
       yield* walkDirectory(handle);
     }
   }
+}
+
+async function getMetadataFiles(directoryHandle: any): Promise<File[]> {
+  const files: File[] = [];
+  for await (const file of walkDirectory(directoryHandle)) {
+    files.push(file);
+  }
+  return files;
 }
 
 // https://developer.chrome.com/docs/capabilities/web-apis/file-system-access#stored_file_or_directory_handles_and_permissions
@@ -388,11 +396,11 @@ function main () {
 
       await logseq.Editor.updateBlock(targetBlock!.uuid, `# ⚙ LKRS: Processing KOReader Annotations ...`)
 
-      // FIXME: change the max value to the number of files in the directory
-      let fileCount = 0;
-      for await (const _ of walkDirectory(directoryHandle)) { fileCount++; };
+      // Get all metadata files in a single walk
+      const files = await getMetadataFiles(directoryHandle);
+      const fileCount = files.length;
 
-      // iterate over all blocks in this target page, and collect the titles, authors, and uuids and place them in a dictionary
+      // iterate over all blocks in this target page, and collect titles, authors, and uuids and place them in a dictionary
       let ret;
       try {
         ret = await logseq.DB.datascriptQuery(`
@@ -429,9 +437,9 @@ function main () {
       }
 
       const syncProgress = new ProgressNotification("Syncing Koreader Annotations to Logseq:", fileCount);
-      for await (const fileHandle of walkDirectory(directoryHandle)) {
-        var text = await fileHandle.text();
-        var parsed_block = lua_to_block(text);
+      for (const fileHandle of files) {
+        const text = await fileHandle.text();
+        const parsed_block = lua_to_block(text);
 
         if (parsed_block) {
           let key: string;

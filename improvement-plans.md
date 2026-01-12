@@ -228,37 +228,53 @@ function handle_annotations_metadata(metadata: any): IBatchBlock | null {
 
 ---
 
-### 2.2 Optimize Directory Walking
-**Files**: `src/index.ts:376-377`, `src/index.ts:416`
+### ✅ 2.2 Optimize Directory Walking **COMPLETED**
+**Files**: `src/index.ts:274-293`
 
-**Current State**:
+**Original State**:
 - Directory walked twice: once to count files, once to process files
 - Both walks read metadata from disk
 
-**Proposed Implementation**:
-1. Modify `walkDirectory()` to return both file handles and count:
-   ```typescript
-   async function walkDirectoryWithCount(directoryHandle: any) {
-     const files: File[] = [];
-     for await (const file of walkDirectory(directoryHandle)) {
-       files.push(file);
-     }
-     return files;
-   }
-   ```
+**Implementation Completed**:
+- ✅ Created `getMetadataFiles()` function that walks directory once and returns file array
+- ✅ Replaced dual walk approach with single walk + array iteration
+- ✅ Removed "FIXME" comment about changing max value to number of files
+- ✅ Updated sync flow to use files array directly
+- ✅ Updated var declarations to const (bonus: partial completion of improvement 3.1)
 
-2. Update sync flow:
-   ```typescript
-   const files = await walkDirectoryWithCount(directoryHandle);
-   const fileCount = files.length;
-   const syncProgress = new ProgressNotification("Syncing Koreader Annotations to Logseq:", fileCount);
-   for (const fileHandle of files) {
-     // process file
-     syncProgress.increment(1);
-   }
-   ```
+**Current State**:
+```typescript
+async function getMetadataFiles(directoryHandle: any): Promise<File[]> {
+  const files: File[] = [];
+  for await (const file of walkDirectory(directoryHandle)) {
+    files.push(file);
+  }
+  return files;
+}
 
-**Impact**: Faster sync operations, especially for large directories.
+// Usage in sync flow:
+await logseq.Editor.updateBlock(targetBlock!.uuid, `# ⚙ LKRS: Processing KOReader Annotations ...`)
+
+const files = await getMetadataFiles(directoryHandle);
+const fileCount = files.length;
+
+const syncProgress = new ProgressNotification("Syncing Koreader Annotations to Logseq:", fileCount);
+for (const fileHandle of files) {
+  const text = await fileHandle.text();
+  const parsed_block = lua_to_block(text);
+  // ...process file...
+  syncProgress.increment(1);
+}
+```
+
+**Implementation Details**:
+- New function `getMetadataFiles()` walks directory once and collects all metadata files
+- Returns array of File objects, eliminating need for second walk
+- Array length used directly for progress bar max value
+- For-of loop processes files from array instead of generator
+- Also updated three var declarations to const (lines 231, 441, 442 in lua_to_block and sync loop)
+
+**Impact**: Faster sync operations, especially for large directories. Eliminated duplicate I/O operations and improved code efficiency.
 
 ---
 
@@ -774,7 +790,7 @@ If user wants to revert to single-page sync:
 
 ### Short Term (Next 1-2 Sprints)
 - ✅ 2.1 Eliminate Code Duplication
-- 2.2 Optimize Directory Walking
+- ✅ 2.2 Optimize Directory Walking
 - New Feature: One Page Per Book (Phase 1-3)
 
 ### Medium Term (Next 3-4 Sprints)
@@ -828,4 +844,4 @@ If user wants to revert to single-page sync:
 ---
 
 *Last Updated: 2025-01-12*
-*Plan Status: Implementation in Progress - 1.1, 1.2, 1.3, and 2.1 completed*
+*Plan Status: Implementation in Progress - 1.1, 1.2, 1.3, 2.1, and 2.2 completed*
