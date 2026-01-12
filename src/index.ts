@@ -19,6 +19,20 @@ let settings: SettingSchemaDesc[] = [
     title: "Sync Page Bookmarks",
     type: "boolean",
   },
+  {
+    key: "maxDescriptionLength",
+    default: 250,
+    description: "Maximum number of characters of book description to import from KOReader. Longer descriptions provide more context but take up more space in your graph.",
+    title: "Max Description Length",
+    type: "number",
+  },
+  {
+    key: "collapseBookmarks",
+    default: true,
+    description: "Automatically collapse bookmark blocks that have personal notes attached. When enabled, only the bookmark text is shown by default, and personal notes are hidden until expanded.",
+    title: "Collapse Bookmarks",
+    type: "boolean",
+  },
 ]
 
 const delay = (t = 100) => new Promise(r => setTimeout(r, t))
@@ -42,9 +56,6 @@ function truncateString(str, length) {
   }
 }
 
-const MAXIMUM_DESCRIPTION_LENGTH = 250; // FIXME: this should be a setting
-const COLLAPSE_BLOCKS = true; // FIXME: this should be a setting
-
 /** This function is responsible for converting a KOReader metadata data structure into a Logseq block. */
 function metadata_to_block(metadata: any): IBatchBlock | null {
   if (metadata.doc_props === 'object' && Object.keys(metadata.doc_props).length === 0) {
@@ -63,6 +74,8 @@ function handle_annotations_metadata(metadata: any): IBatchBlock | null {
     return null;
   }
 
+  const MAXIMUM_DESCRIPTION_LENGTH = logseq.settings?.maxDescriptionLength ?? 250;
+  const COLLAPSE_BLOCKS = logseq.settings?.collapseBookmarks ?? true;
   let bookmarks: IBatchBlock[] = [];
 
   let authors = metadata.doc_props.authors;
@@ -143,6 +156,8 @@ function handle_bookmarks_metadata(metadata: any): IBatchBlock | null {
     return null;
   }
 
+  const MAXIMUM_DESCRIPTION_LENGTH = logseq.settings?.maxDescriptionLength ?? 250;
+  const COLLAPSE_BLOCKS = logseq.settings?.collapseBookmarks ?? true;
   let bookmarks: IBatchBlock[] = [];
 
   let authors = metadata.doc_props.authors;

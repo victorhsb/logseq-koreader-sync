@@ -10,58 +10,55 @@
 
 ## High Priority Improvements
 
-### 1.1 Make Description Length Configurable
+### ✅ 1.1 Make Description Length Configurable **COMPLETED**
 **File**: `src/index.ts:45`
 
-**Current State**:
+**Original State**:
 ```typescript
 const MAXIMUM_DESCRIPTION_LENGTH = 250; // FIXME: this should be a setting
 ```
 
-**Proposed Implementation**:
-- Add a new setting to `settings` array in `src/index.ts`:
-  ```typescript
-  {
-    key: "maxDescriptionLength",
-    default: 250,
-    description: "Maximum length of book description imported from KOReader.",
-    title: "Max Description Length",
-    type: "number",
-  }
-  ```
-- Replace hardcoded constant with setting read:
-  ```typescript
-  const MAXIMUM_DESCRIPTION_LENGTH = logseq.settings?.maxDescriptionLength ?? 250;
-  ```
-- Update `handle_annotations_metadata()` and `handle_bookmarks_metadata()` to use the value from settings
+**Implementation Completed**:
+- ✅ Added `maxDescriptionLength` setting to `settings` array in `src/index.ts`
+- ✅ Replaced hardcoded constant with dynamic setting read in `handle_annotations_metadata()` and `handle_bookmarks_metadata()`
+- ✅ Updated setting description to explain plugin behavior impact
+
+**Current State**:
+```typescript
+const MAXIMUM_DESCRIPTION_LENGTH = logseq.settings?.maxDescriptionLength ?? 250;
+```
+
+**Implementation Details**:
+- Added new setting with improved description: "Maximum number of characters of book description to import from KOReader. Longer descriptions provide more context but take up more space in your graph."
+- Settings are read dynamically within each function to ensure current values are used
+- Maintains backward compatibility with default value of 250 characters
 
 **Impact**: Allows users to control how much book description is imported, useful for graphs with space constraints or detailed notes.
 
 ---
 
-### 1.2 Make Block Collapse Configurable
+### ✅ 1.2 Make Block Collapse Configurable **COMPLETED**
 **File**: `src/index.ts:46`
 
-**Current State**:
+**Original State**:
 ```typescript
 const COLLAPSE_BLOCKS = true; // FIXME: this should be a setting
 ```
 
-**Proposed Implementation**:
-- Add a new setting to `settings` array:
-  ```typescript
-  {
-    key: "collapseBookmarks",
-    default: true,
-    description: "Collapse bookmark blocks that have personal notes.",
-    title: "Collapse Bookmarks",
-    type: "boolean",
-  }
-  ```
-- Replace hardcoded constant with setting read:
-  ```typescript
-  const COLLAPSE_BLOCKS = logseq.settings?.collapseBookmarks ?? true;
-  ```
+**Implementation Completed**:
+- ✅ Added `collapseBookmarks` setting to `settings` array in `src/index.ts`
+- ✅ Replaced hardcoded constant with dynamic setting read in `handle_annotations_metadata()` and `handle_bookmarks_metadata()`
+- ✅ Updated setting description to explain plugin behavior impact
+
+**Current State**:
+```typescript
+const COLLAPSE_BLOCKS = logseq.settings?.collapseBookmarks ?? true;
+```
+
+**Implementation Details**:
+- Added new setting with improved description: "Automatically collapse bookmark blocks that have personal notes attached. When enabled, only the bookmark text is shown by default, and personal notes are hidden until expanded."
+- Settings are read dynamically within each function to ensure current values are used
+- Maintains backward compatibility with default value of `true`
 
 **Impact**: Users can choose visual presentation of bookmarks, improving readability based on preference.
 
@@ -704,9 +701,9 @@ If user wants to revert to single-page sync:
 
 ## Prioritization Summary
 
-### Immediate (This Sprint)
-- 1.1 Make Description Length Configurable
-- 1.2 Make Block Collapse Configurable
+### Immediate (This Sprint) ✅
+- ✅ 1.1 Make Description Length Configurable
+- ✅ 1.2 Make Block Collapse Configurable
 - 1.3 Replace Fixed Delay with Proper Wait Loop
 - 1.4 Improve Error Handling and User Feedback
 
@@ -766,4 +763,4 @@ If user wants to revert to single-page sync:
 ---
 
 *Last Updated: 2025-01-12*
-*Plan Status: Draft - Awaiting Review*
+*Plan Status: Implementation in Progress - 1.1 and 1.2 completed*
