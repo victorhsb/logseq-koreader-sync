@@ -12,6 +12,13 @@ let settings: SettingSchemaDesc[] = [
     title: "Remember KOReader Path",
     type: "boolean",
   },
+  {
+    key: "syncPageBookmarks",
+    default: true,
+    description: "Sync page bookmarks (annotations without text).",
+    title: "Sync Page Bookmarks",
+    type: "boolean",
+  },
 ]
 
 const delay = (t = 100) => new Promise(r => setTimeout(r, t))
@@ -74,6 +81,8 @@ function handle_annotations_metadata(metadata: any): IBatchBlock | null {
     }
   }
 
+  const syncPageBookmarks = logseq.settings?.syncPageBookmarks ?? true;
+
   for (const annotation of metadata.annotations) {
     let personal_note: IBatchBlock[] = [];
     if (annotation.note) {
@@ -83,7 +92,11 @@ function handle_annotations_metadata(metadata: any): IBatchBlock | null {
     }
 
     let text_content: string = "> (no text available)";
-    if (!annotation.pos0) {
+    const isPageBookmark = !annotation.pos0;
+    if (isPageBookmark) {
+      if (!syncPageBookmarks) {
+        continue;
+      }
       text_content = "> Page bookmark";
     } else if (annotation.text) {
       text_content = `> ${annotation.text.replace('-', '\\-')}`; // escape dashes; they're used for lists in logseq
@@ -285,6 +298,8 @@ function main () {
       onSettingsChange();
       logseq.onSettingsChanged(onSettingsChange);
 
+      const syncPageBookmarks = logseq.settings?.syncPageBookmarks ?? true;
+
       const info = await logseq.App.getUserConfigs()
       if (loading) return
 
@@ -442,6 +457,16 @@ function main () {
             let existing_bookmarks = {};
             for (const bookmark of existing_bookmark_blocks) {
               let bookmark_block = await logseq.Editor.getBlock(bookmark[1] as BlockEntity);
+
+              if (!bookmark_block?.content) {
+                continue;
+              }
+
+              const isPageBookmark = bookmark_block.content.trim() === "> Page bookmark";
+              if (!syncPageBookmarks && isPageBookmark) {
+                await logseq.Editor.removeBlock(bookmark[1] as BlockUUID);
+                continue;
+              }
 
               const content_start = bookmark_block!.content!.indexOf("\n> ");     // not ideal
               const content = bookmark_block!.content!.substring(content_start+3).replace('-', '\-');
