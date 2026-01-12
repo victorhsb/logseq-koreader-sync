@@ -141,40 +141,88 @@ loading = true
 
 ## Medium Priority Improvements
 
-### 2.1 Eliminate Code Duplication - Extract Common Functions
-**Files**: `src/index.ts:68-82`, `src/index.ts:148-162`, `src/index.ts:73-82`
+### ✅ 2.1 Eliminate Code Duplication - Extract Common Functions **COMPLETED**
+**Files**: `src/index.ts:71-117`
 
-**Current State**:
+**Original State**:
 - Duplicate header block creation in `handle_annotations_metadata()` and `handle_bookmarks_metadata()`
 - Duplicate author normalization logic in both functions
+- Duplicate settings reading in both functions
 
-**Proposed Implementation**:
-1. Extract author normalization:
-   ```typescript
-   function normalizeAuthors(authors: string | undefined): string | undefined {
-     if (!authors) return undefined;
-     return authors.replace(/\\\n/g, ', ');
-   }
-   ```
+**Implementation Completed**:
+- ✅ Added `BookSettings` interface for type safety
+- ✅ Created `getBookSettings()` function to centralize settings reading
+- ✅ Created `normalizeAuthors()` function to handle author normalization
+- ✅ Created `createSimpleBookHeader()` for early returns (no collapsed, no children)
+- ✅ Created `createBookBlock()` for final returns (with collapsed and children)
+- ✅ Refactored `handle_annotations_metadata()` to use all new functions
+- ✅ Refactored `handle_bookmarks_metadata()` to use all new functions
 
-2. Extract book header creation:
-   ```typescript
-   function createBookHeader(metadata: any, maxLength: number, collapsed: boolean): IBatchBlock | null {
-     if (!metadata.annotations && !metadata.bookmarks) {
-       return {
-         content: `## ${metadata.doc_props.title}`,
-         properties: {
-           'authors': normalizeAuthors(metadata.doc_props.authors),
-           'description': truncateString(metadata.doc_props.description, maxLength),
-           'language': metadata.doc_props.language,
-         }
-       };
-     }
-     return null;
-   }
-   ```
+**Current State**:
+```typescript
+interface BookSettings {
+  maxDescriptionLength: number;
+  collapseBookmarks: boolean;
+  syncPageBookmarks: boolean;
+}
 
-3. Refactor both handlers to use extracted functions
+function getBookSettings(): BookSettings {
+  return {
+    maxDescriptionLength: logseq.settings?.maxDescriptionLength ?? 250,
+    collapseBookmarks: logseq.settings?.collapseBookmarks ?? true,
+    syncPageBookmarks: logseq.settings?.syncPageBookmarks ?? true,
+  };
+}
+
+function normalizeAuthors(authors: string | undefined): string | undefined {
+  if (!authors) return undefined;
+  return authors.replace(/\\\n/g, ', ');
+}
+
+function createSimpleBookHeader(metadata: any, settings: BookSettings): IBatchBlock {
+  return {
+    content: `## ${metadata.doc_props.title}`,
+    properties: {
+      'authors': normalizeAuthors(metadata.doc_props.authors),
+      'description': truncateString(metadata.doc_props.description, settings.maxDescriptionLength),
+      'language': metadata.doc_props.language,
+    }
+  };
+}
+
+function createBookBlock(metadata: any, settings: BookSettings, bookmarks: IBatchBlock[]): IBatchBlock {
+  return {
+    content: `## ${metadata.doc_props.title}`,
+    properties: {
+      'authors': normalizeAuthors(metadata.doc_props.authors),
+      'description': truncateString(metadata.doc_props.description, settings.maxDescriptionLength),
+      'language': metadata.doc_props.language,
+      'collapsed': settings.collapseBookmarks,
+    },
+    children: [
+      {
+        content: `### Bookmarks`,
+        children: bookmarks
+      }
+    ]
+  };
+}
+
+// Usage in handlers:
+function handle_annotations_metadata(metadata: any): IBatchBlock | null {
+  // ...
+  const settings = getBookSettings();
+  // ...process annotations...
+  return createBookBlock(metadata, settings, bookmarks);
+}
+```
+
+**Implementation Details**:
+- Settings now read once per function call via `getBookSettings()`
+- Author normalization logic consolidated into single function
+- Book header creation unified with two variants: simple (for early returns) and full (for final returns)
+- Both handlers now use the same helper functions, eliminating duplication
+- Code is more maintainable and less error-prone
 
 **Impact**: Easier maintenance, less chance of bugs when updating one function but not the other.
 
@@ -725,7 +773,7 @@ If user wants to revert to single-page sync:
 - 1.4 Improve Error Handling and User Feedback
 
 ### Short Term (Next 1-2 Sprints)
-- 2.1 Eliminate Code Duplication
+- ✅ 2.1 Eliminate Code Duplication
 - 2.2 Optimize Directory Walking
 - New Feature: One Page Per Book (Phase 1-3)
 
@@ -780,4 +828,4 @@ If user wants to revert to single-page sync:
 ---
 
 *Last Updated: 2025-01-12*
-*Plan Status: Implementation in Progress - 1.1, 1.2, and 1.3 completed*
+*Plan Status: Implementation in Progress - 1.1, 1.2, 1.3, and 2.1 completed*

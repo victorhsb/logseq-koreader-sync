@@ -68,6 +68,54 @@ function truncateString(str, length) {
   }
 }
 
+interface BookSettings {
+  maxDescriptionLength: number;
+  collapseBookmarks: boolean;
+  syncPageBookmarks: boolean;
+}
+
+function getBookSettings(): BookSettings {
+  return {
+    maxDescriptionLength: logseq.settings?.maxDescriptionLength ?? 250,
+    collapseBookmarks: logseq.settings?.collapseBookmarks ?? true,
+    syncPageBookmarks: logseq.settings?.syncPageBookmarks ?? true,
+  };
+}
+
+function normalizeAuthors(authors: string | undefined): string | undefined {
+  if (!authors) return undefined;
+  return authors.replace(/\\\n/g, ', ');
+}
+
+function createSimpleBookHeader(metadata: any, settings: BookSettings): IBatchBlock {
+  return {
+    content: `## ${metadata.doc_props.title}`,
+    properties: {
+      'authors': normalizeAuthors(metadata.doc_props.authors),
+      'description': truncateString(metadata.doc_props.description, settings.maxDescriptionLength),
+      'language': metadata.doc_props.language,
+    }
+  };
+}
+
+function createBookBlock(metadata: any, settings: BookSettings, bookmarks: IBatchBlock[]): IBatchBlock {
+  return {
+    content: `## ${metadata.doc_props.title}`,
+    properties: {
+      'authors': normalizeAuthors(metadata.doc_props.authors),
+      'description': truncateString(metadata.doc_props.description, settings.maxDescriptionLength),
+      'language': metadata.doc_props.language,
+      'collapsed': settings.collapseBookmarks,
+    },
+    children: [
+      {
+        content: `### Bookmarks`,
+        children: bookmarks
+      }
+    ]
+  };
+}
+
 /** This function is responsible for converting a KOReader metadata data structure into a Logseq block. */
 function metadata_to_block(metadata: any): IBatchBlock | null {
   if (metadata.doc_props === 'object' && Object.keys(metadata.doc_props).length === 0) {
@@ -86,27 +134,12 @@ function handle_annotations_metadata(metadata: any): IBatchBlock | null {
     return null;
   }
 
-  const MAXIMUM_DESCRIPTION_LENGTH = logseq.settings?.maxDescriptionLength ?? 250;
-  const COLLAPSE_BLOCKS = logseq.settings?.collapseBookmarks ?? true;
+  const settings = getBookSettings();
   let bookmarks: IBatchBlock[] = [];
 
-  let authors = metadata.doc_props.authors;
-  if (authors) {
-    authors = authors.replace(/\\\n/g, ', '); // this seems to be how KOReader stores multiple authors; at least from Calibre
-  }
-
   if (!metadata.annotations) {
-    return {
-      content: `## ${metadata.doc_props.title}`,
-      properties: {
-        'authors': authors,
-        'description': truncateString(metadata.doc_props.description, MAXIMUM_DESCRIPTION_LENGTH),
-        'language': metadata.doc_props.language,
-      }
-    }
+    return createSimpleBookHeader(metadata, settings);
   }
-
-  const syncPageBookmarks = logseq.settings?.syncPageBookmarks ?? true;
 
   for (const annotation of metadata.annotations) {
     let personal_note: IBatchBlock[] = [];
@@ -119,7 +152,7 @@ function handle_annotations_metadata(metadata: any): IBatchBlock | null {
     let text_content: string = "> (no text available)";
     const isPageBookmark = !annotation.pos0;
     if (isPageBookmark) {
-      if (!syncPageBookmarks) {
+      if (!settings.syncPageBookmarks) {
         continue;
       }
       text_content = "> Page bookmark";
@@ -139,28 +172,14 @@ function handle_annotations_metadata(metadata: any): IBatchBlock | null {
           'datetime': annotation_date,
           'page': annotation.pageno,
           'chapter': annotation.chapter,
-          'collapsed': COLLAPSE_BLOCKS && personal_note.length > 0,
+          'collapsed': settings.collapseBookmarks && personal_note.length > 0,
         },
         children: personal_note
       }
     )
   }
 
-  return {
-    content: `## ${metadata.doc_props.title}`,
-    properties: {
-      'authors': authors,
-      'description': truncateString(metadata.doc_props.description, MAXIMUM_DESCRIPTION_LENGTH),
-      'language': metadata.doc_props.language,
-      'collapsed': COLLAPSE_BLOCKS,
-    },
-    children: [
-      {
-        content: `### Bookmarks`,
-        children: bookmarks
-      }
-    ]
-  }
+  return createBookBlock(metadata, settings, bookmarks);
 }
 
 function handle_bookmarks_metadata(metadata: any): IBatchBlock | null {
@@ -168,24 +187,11 @@ function handle_bookmarks_metadata(metadata: any): IBatchBlock | null {
     return null;
   }
 
-  const MAXIMUM_DESCRIPTION_LENGTH = logseq.settings?.maxDescriptionLength ?? 250;
-  const COLLAPSE_BLOCKS = logseq.settings?.collapseBookmarks ?? true;
+  const settings = getBookSettings();
   let bookmarks: IBatchBlock[] = [];
 
-  let authors = metadata.doc_props.authors;
-  if (authors) {
-    authors = authors.replace(/\\\n/g, ', '); // this seems to be how KOReader stores multiple authors; at least from Calibre
-  }
-
   if (!metadata.bookmarks) {
-    return {
-      content: `## ${metadata.doc_props.title}`,
-      properties: {
-        'authors': authors,
-        'description': truncateString(metadata.doc_props.description, MAXIMUM_DESCRIPTION_LENGTH),
-        'language': metadata.doc_props.language,
-      }
-    }
+    return createSimpleBookHeader(metadata, settings);
   }
 
   for (const bookmark of metadata.bookmarks) {
@@ -203,28 +209,14 @@ function handle_bookmarks_metadata(metadata: any): IBatchBlock | null {
           'datetime': bookmark.datetime,
           'page': bookmark.page,
           'chapter': bookmark.chapter,
-          'collapsed': COLLAPSE_BLOCKS && personal_note.length > 0,
+          'collapsed': settings.collapseBookmarks && personal_note.length > 0,
         },
         children: personal_note
       }
     )
   }
 
-  return {
-    content: `## ${metadata.doc_props.title}`,
-    properties: {
-      'authors': authors,
-      'description': truncateString(metadata.doc_props.description, MAXIMUM_DESCRIPTION_LENGTH),
-      'language': metadata.doc_props.language,
-      'collapsed': COLLAPSE_BLOCKS,
-    },
-    children: [
-      {
-        content: `### Bookmarks`,
-        children: bookmarks
-      }
-    ]
-  }
+  return createBookBlock(metadata, settings, bookmarks);
 }
 
 /** Uses luaparse to read a lua file and builds a metadata data structure to pass off to `metadata_to_block` */
