@@ -111,31 +111,39 @@ loading = true
 
 ---
 
-### 1.4 Improve Error Handling and User Feedback
-**Files**: `src/index.ts:359`, `src/index.ts:392`, `src/index.ts:432`, `src/index.ts:452`, `src/index.ts:461`
+### ✅ 1.4 Improve Error Handling and User Feedback **COMPLETED**
+**Files**: `src/index.ts:40-43`, `src/index.ts:389`, `src/index.ts:399`, `src/index.ts:424`, `src/index.ts:464`, `src/index.ts:485`
 
-**Current State**:
+**Original State**:
 - Errors only logged to console
 - Generic error messages like "Sync cancelled by user"
 - Errors in bookmark reconciliation silently continue
 
-**Proposed Implementation**:
-1. Create a user-friendly error notification function:
-   ```typescript
-   async function showErrorToUser(message: string, details?: string) {
-     logseq.UI.showMsg(message, "error");
-     if (details) console.error(details);
-   }
-   ```
+**Implementation Completed**:
+- ✅ Added `showErrorToUser()` function at line 40 to display user-friendly error messages
+- ✅ Replaced console-only errors with user-facing messages:
+  - Line 389: Directory selection error now shows actual error reason
+  - Line 399: No directory selected error with helpful guidance
+  - Line 424: Datascript query errors with helpful context
+  - Line 464: Warning for missing blocks during sync
+  - Line 485: Warning for missing bookmarks sections
 
-2. Replace console-only errors with user-facing messages:
-   - Line 359: Show actual error reason
-   - Line 392: Show datascript query errors with helpful context
-   - Lines 432, 452, 461: Optionally show warnings for skipped blocks
+**Current State**:
+```typescript
+async function showErrorToUser(message: string, details?: string) {
+  logseq.UI.showMsg(message, "error");
+  if (details) console.error(details);
+}
+```
 
-3. Add error recovery guidance where possible
+**Implementation Details**:
+- Added `showErrorToUser()` function that displays error messages to users via Logseq UI
+- Errors are still logged to console for debugging but users see actionable messages
+- Error details extracted from Error objects when available
+- All error locations updated with descriptive user-facing messages
+- Warning messages used for non-critical issues that allow sync to continue
 
-**Impact**: Users can understand and act on errors, reducing support burden and improving UX.
+**Impact**: Users can understand and act on errors, reducing support burden and improving UX.</think></tool_call>
 
 ---
 
@@ -786,7 +794,7 @@ If user wants to revert to single-page sync:
 - ✅ 1.1 Make Description Length Configurable
 - ✅ 1.2 Make Block Collapse Configurable
 - ✅ 1.3 Replace Fixed Delay with Proper Wait Loop
-- 1.4 Improve Error Handling and User Feedback
+- ✅ 1.4 Improve Error Handling and User Feedback
 
 ### Short Term (Next 1-2 Sprints)
 - ✅ 2.1 Eliminate Code Duplication
@@ -844,4 +852,4 @@ If user wants to revert to single-page sync:
 ---
 
 *Last Updated: 2025-01-12*
-*Plan Status: Implementation in Progress - 1.1, 1.2, 1.3, 2.1, and 2.2 completed*
+*Plan Status: Implementation in Progress - 1.1, 1.2, 1.3, 1.4, 2.1, and 2.2 completed*

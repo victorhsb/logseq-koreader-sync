@@ -37,6 +37,11 @@ let settings: SettingSchemaDesc[] = [
 
 const delay = (t = 100) => new Promise(r => setTimeout(r, t))
 
+async function showErrorToUser(message: string, details?: string) {
+  logseq.UI.showMsg(message, "error");
+  if (details) console.error(details);
+}
+
 async function waitForPage(expectedPageName: string, maxWait: number = 5000): Promise<BlockEntity> {
   const startTime = Date.now();
   while (Date.now() - startTime < maxWait) {
@@ -380,7 +385,8 @@ function main () {
           } else {
             await logseq.Editor.updateBlock(targetBlock!.uuid, "# ❌ LKRS: Sync cancelled by user.")
           }
-          console.error(e);
+          const errorDetails = e instanceof Error ? e.message : String(e);
+          await showErrorToUser("Failed to select KOReader directory. Please try again.", `Directory selection error: ${errorDetails}`);
           return;
         }
 
@@ -390,8 +396,8 @@ function main () {
       }
 
       if (!directoryHandle) {
-        console.error('No directory selected / found.')
-        return; // something went wrong
+        await showErrorToUser("No KOReader directory selected.", "Directory handle is null or undefined. Please select a valid KOReader metadata directory.");
+        return;
       }
 
       await logseq.Editor.updateBlock(targetBlock!.uuid, `# ⚙ LKRS: Processing KOReader Annotations ...`)
@@ -414,7 +420,8 @@ function main () {
         ]
         `)
       } catch (e) {
-        console.error("Error while iterating over blocks in the target page: ", e);
+        const errorDetails = e instanceof Error ? e.message : String(e);
+        await showErrorToUser("Failed to query existing blocks. Please check your database and try again.", `Datascript query error: ${errorDetails}`);
         return;
       }
 
@@ -453,7 +460,8 @@ function main () {
           if (key in existingBlocks) {
             const existing_block = await logseq.Editor.getBlock(existingBlocks[key]);
             if (existing_block === null) {
-              console.error("Block not found, but we also just found it - which is pretty weird: ", existingBlocks[key]);
+              const errorDetails = `Block UUID ${existingBlocks[key]} not found during sync.`;
+              await showErrorToUser("Sync warning: A previously synced block could not be found.", errorDetails);
               continue;
             }
 
@@ -473,7 +481,8 @@ function main () {
             }
 
             if (existing_bookmark_blocks === undefined) {
-              console.error("Bookmarks not found for block ", existingBlocks[key]);
+              const errorDetails = `No bookmarks section found for block ${existingBlocks[key]}. The book may have been corrupted or manually edited.`;
+              await showErrorToUser("Sync warning: Bookmarks section missing for a synced book.", errorDetails);
               continue;
             }
 
