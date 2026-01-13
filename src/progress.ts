@@ -2,10 +2,12 @@ export class ProgressNotification {
     max: number;
     current: number;
     progressBar: HTMLElement | null;
+    msgElement: HTMLElement | null;
 
     constructor(msg: string, max: number) {
         this.max = max;
         this.current = 0;
+        this.msgElement = null;
         logseq.provideUI({
             key: `logseq-koreader-sync-progress-notification-${logseq.baseInfo.id}`,
             path: "div.notifications",
@@ -56,6 +58,20 @@ export class ProgressNotification {
             }
 
             this.progressBar.setAttribute("value", `${this.current}`);
+        } catch (e) {}
+    }
+
+    updateMessage(msg: string) {
+        try {
+            if (this.msgElement == null) {
+                const notification = document.querySelector(`[data-key="logseq-koreader-sync-progress-notification-${logseq.baseInfo.id}"]`);
+                if (notification) {
+                    this.msgElement = notification.querySelector('.text');
+                }
+            }
+            if (this.msgElement) {
+                this.msgElement.textContent = msg;
+            }
         } catch (e) {}
     }
 
