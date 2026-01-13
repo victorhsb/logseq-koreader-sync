@@ -98,7 +98,7 @@ function onSettingsChange() {
   }
 }
 
-function truncateString(str, length) {
+export function truncateString(str, length) {
   if (!str) {
       return '';
   }
@@ -121,7 +121,7 @@ interface BookSettings {
   syncPageName: string;
 }
 
-function getBookSettings(): BookSettings {
+export function getBookSettings(): BookSettings {
   return {
     maxDescriptionLength: logseq.settings?.maxDescriptionLength ?? 250,
     collapseBookmarks: logseq.settings?.collapseBookmarks ?? true,
@@ -134,23 +134,23 @@ function getBookSettings(): BookSettings {
   };
 }
 
-function normalizeAuthors(authors: string | undefined): string | undefined {
+export function normalizeAuthors(authors: string | undefined): string | undefined {
   if (!authors) return undefined;
   return authors.replace(/\\\n/g, ', ');
 }
 
-function generatePageName(metadata: any, settings: BookSettings): string {
+export function generatePageName(metadata: any, settings: BookSettings): string {
   const prefix = settings.bookPagePrefix;
   const title = metadata.doc_props.title || "Untitled Book";
   const authors = normalizeAuthors(metadata.doc_props.authors);
-  
+
   if (settings.pageNamingConvention === "author_title" && authors) {
     return `${prefix}${authors} - ${title}`;
   }
   return `${prefix}${title}`;
 }
 
-function sanitizePageName(name: string): string {
+export function sanitizePageName(name: string): string {
   return name
     .replace(/[<>:"/\\|?*#\[\]]/g, "")
     .replace(/\s+/g, " ")
@@ -677,7 +677,7 @@ async function syncPerPageMode(directoryHandle: any): Promise<void> {
 
 /** This function is responsible for converting a KOReader metadata data structure into a Logseq block. */
 function metadata_to_block(metadata: any): IBatchBlock | null {
-  if (metadata.doc_props === 'object' && Object.keys(metadata.doc_props).length === 0) {
+  if (typeof metadata.doc_props === 'object' && Object.keys(metadata.doc_props).length === 0) {
     return null;
   }
 
@@ -688,7 +688,11 @@ function metadata_to_block(metadata: any): IBatchBlock | null {
   }
 }
 
-function handle_annotations_metadata(metadata: any): IBatchBlock | null {
+export function handle_annotations_metadata(metadata: any): IBatchBlock | null {
+  if (typeof metadata.doc_props === 'object' && Object.keys(metadata.doc_props).length === 0) {
+    return null;
+  }
+
   if (typeof metadata.annotations === 'object' && Object.keys(metadata.annotations).length === 0) {
     return null;
   }
@@ -741,7 +745,11 @@ function handle_annotations_metadata(metadata: any): IBatchBlock | null {
   return createBookBlock(metadata, settings, bookmarks);
 }
 
-function handle_bookmarks_metadata(metadata: any): IBatchBlock | null {
+export function handle_bookmarks_metadata(metadata: any): IBatchBlock | null {
+  if (typeof metadata.doc_props === 'object' && Object.keys(metadata.doc_props).length === 0) {
+    return null;
+  }
+
   if (typeof metadata.bookmarks === 'object' && Object.keys(metadata.bookmarks).length === 0) {
     return null;
   }
@@ -784,7 +792,7 @@ interface ParsedBook {
 }
 
 /** Uses luaparse to read a lua file and builds a metadata data structure to pass off to `metadata_to_block` */
-function lua_to_block(text: string): ParsedBook {
+export function lua_to_block(text: string): ParsedBook {
   const ast = luaparse(text, {
     comments: false,
     locations: false,

@@ -8,6 +8,7 @@ export class ProgressNotification {
         this.max = max;
         this.current = 0;
         this.msgElement = null;
+        this.progressBar = null;
         logseq.provideUI({
             key: `logseq-koreader-sync-progress-notification-${logseq.baseInfo.id}`,
             path: "div.notifications",
