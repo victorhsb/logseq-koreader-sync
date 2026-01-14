@@ -20,14 +20,25 @@ jobs:
 
       - name: Verify tag is on main branch
         run: |
-          # When a tag is pushed, github.ref is the tag (refs/tags/v1.0.0)
-          # github.base_ref is the branch the tag was pushed from
-          if [ "${{ github.base_ref }}" != "refs/heads/main" ]; then
-            echo "Error: This workflow only runs for tags on the main branch"
-            echo "Current base ref: ${{ github.base_ref }}"
+          echo "Checking if tag is on main branch..."
+          echo "Current ref: ${{ github.ref }}"
+          
+          # Get the commit SHA that this tag points to
+          TAG_COMMIT=$(git rev-parse ${{ github.ref }})
+          echo "Tag commit: $TAG_COMMIT"
+          
+          # Check if main branch contains this commit
+          if git branch --contains main | grep -q "main"; then
+            echo "✓ Tag commit is on main branch, proceeding with release"
+          else
+            echo "❌ Error: This workflow only runs for tags on main branch"
+            echo "The tag's commit is not on the main branch"
+            echo ""
+            echo "To fix this:"
+            echo "1. Merge your changes to main branch first"
+            echo "2. Then push the tag from main branch: git push origin v1.0.0"
             exit 1
           fi
-          echo "Tag is on main branch, proceeding with release"
 
       - name: Use Node.js
         uses: actions/setup-node@v4
