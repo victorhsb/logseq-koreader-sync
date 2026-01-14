@@ -77,10 +77,23 @@ export class ProgressNotification {
     }
 
     destruct() {
+        try {
+            const notification = document.querySelector(`[data-key="logseq-koreader-sync-progress-notification-${logseq.baseInfo.id}"]`);
+            if (notification) {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }
+        } catch (e) {
+            console.error('Error removing progress notification:', e);
+        }
+        
         logseq.provideUI({
             key: `logseq-koreader-sync-progress-notification-${logseq.baseInfo.id}`,
             template: ``,
         });
+        
         this.progressBar = null;
+        this.msgElement = null;
     }
 }

@@ -270,7 +270,8 @@ async function updateIndexPage(books: BookInfo[], settings: BookSettings): Promi
 }
 
 async function syncBookmarksToPage(metadata: any, pageUUID: string, bookmarksUUID: string, settings: BookSettings): Promise<void> {
-  const pageBlocks = await logseq.Editor.getPageBlocksTree(pageUUID);
+  try {
+    const pageBlocks = await logseq.Editor.getPageBlocksTree(pageUUID);
   
   if (!pageBlocks) return;
   
@@ -291,6 +292,9 @@ async function syncBookmarksToPage(metadata: any, pageUUID: string, bookmarksUUI
   
   let existing_bookmarks = {};
   for (const bookmark of existing_bookmark_blocks) {
+    if (!Array.isArray(bookmark) || bookmark.length < 2) {
+      continue;
+    }
     let bookmark_block = await logseq.Editor.getBlock(bookmark[1] as BlockEntity);
     
     if (!bookmark_block?.content) {
@@ -410,9 +414,14 @@ async function syncBookmarksToPage(metadata: any, pageUUID: string, bookmarksUUI
       });
     }
   }
-  
+    
     for (const key in existing_bookmarks) {
     await logseq.Editor.removeBlock(existing_bookmarks[key] as BlockUUID);
+  }
+  } catch (e) {
+    const errorDetails = e instanceof Error ? e.message : String(e);
+    console.error('Error syncing bookmarks to page:', errorDetails);
+    throw e;
   }
 }
 
@@ -644,24 +653,37 @@ async function syncPerPageMode(directoryHandle: any): Promise<void> {
   );
   
   for (const fileHandle of files) {
-    const text = await fileHandle.text();
-    const { block: parsed_block, metadata } = lua_to_block(text);
-    
-    if (metadata && metadata.doc_props) {
-      const page = await getOrCreateBookPage(metadata, settings);
-      const bookmarksUUID = await createBookmarksSection(page.uuid);
+    try {
+      const text = await fileHandle.text();
+      const { block: parsed_block, metadata } = lua_to_block(text);
       
-      await syncBookmarksToPage(metadata, page.uuid, bookmarksUUID, settings);
-      
-      allBooks.push({
-        title: metadata.doc_props.title || "Untitled Book",
-        authors: normalizeAuthors(metadata.doc_props.authors),
-        pageName: page.originalName,
-        pageUUID: page.uuid,
-        syncedAt: new Date(),
-      });
-      
-      syncProgress.updateMessage(`Syncing: ${metadata.doc_props.title || "Untitled Book"} (${syncProgress.current + 1}/${files.length})`);
+      if (metadata && metadata.doc_props) {
+        const hasAnnotations = metadata.annotations && metadata.annotations.length > 0;
+        const hasBookmarks = metadata.bookmarks && metadata.bookmarks.length > 0;
+        
+        if (!hasAnnotations && !hasBookmarks) {
+          syncProgress.increment(1);
+          continue;
+        }
+        
+        const page = await getOrCreateBookPage(metadata, settings);
+        const bookmarksUUID = await createBookmarksSection(page.uuid);
+        
+        await syncBookmarksToPage(metadata, page.uuid, bookmarksUUID, settings);
+        
+        allBooks.push({
+          title: metadata.doc_props.title || "Untitled Book",
+          authors: normalizeAuthors(metadata.doc_props.authors),
+          pageName: page.originalName,
+          pageUUID: page.uuid,
+          syncedAt: new Date(),
+        });
+        
+        syncProgress.updateMessage(`Syncing: ${metadata.doc_props.title || "Untitled Book"} (${syncProgress.current + 1}/${files.length})`);
+      }
+    } catch (e) {
+      const errorDetails = e instanceof Error ? e.message : String(e);
+      console.error(`Error syncing ${fileHandle.name}:`, errorDetails);
     }
     
     syncProgress.increment(1);
