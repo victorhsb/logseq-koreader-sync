@@ -10,9 +10,6 @@ npm test
 
 # Run all tests once
 npm run test:run
-
-# Run tests with coverage report
-npm run test:coverage
 ```
 
 ## Test Structure

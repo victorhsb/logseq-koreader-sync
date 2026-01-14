@@ -12,7 +12,6 @@ npm run build
 # Run tests
 npm test                    # Watch mode
 npm run test:run            # Run tests once
-npm run test:coverage       # Generate coverage report
 
 # Linting
 npm run lint                # Check code for issues

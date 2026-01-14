@@ -19,12 +19,11 @@
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "test": "vitest",
-    "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:run": "vitest run"
   },
   "license": "MIT",
   "logseq": {
-    "id": "_isosphere-koreader-sync",
+    "id": "_victorhsb-koreader-sync",
     "title": "Logseq Koreader Sync",
     "icon": "./icon.png"
   },
