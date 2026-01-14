@@ -29,8 +29,6 @@ jobs:
           
           # Check if main branch contains this commit
           if git branch --contains main | grep -q "main"; then
-            echo "✓ Tag commit is on main branch, proceeding with release"
-          else
             echo "❌ Error: This workflow only runs for tags on main branch"
             echo "The tag's commit is not on the main branch"
             echo ""
@@ -38,6 +36,8 @@ jobs:
             echo "1. Merge your changes to main branch first"
             echo "2. Then push the tag from main branch: git push origin v1.0.0"
             exit 1
+          else
+            echo "✓ Tag commit is on main branch, proceeding with release"
           fi
 
       - name: Use Node.js
