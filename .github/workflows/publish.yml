@@ -3,7 +3,6 @@ name: Build plugin
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
     tags:
       - "v*" # Push events to matching v* tag format, i.e. v1.0, v20.15.10
 
@@ -16,6 +15,20 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag is on main branch
+        run: |
+          # When a tag is pushed, github.ref is the tag (refs/tags/v1.0.0)
+          # github.base_ref is the branch the tag was pushed from
+          if [ "${{ github.base_ref }}" != "refs/heads/main" ]; then
+            echo "Error: This workflow only runs for tags on the main branch"
+            echo "Current base ref: ${{ github.base_ref }}"
+            exit 1
+          fi
+          echo "Tag is on main branch, proceeding with release"
+
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
