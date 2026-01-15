@@ -24,7 +24,6 @@ const mockLogseq = {
     insertBlock: vi.fn(() => Promise.resolve({})),
     updateBlock: vi.fn(() => Promise.resolve()),
     removeBlock: vi.fn(() => Promise.resolve()),
-    insertBatchBlock: vi.fn(() => Promise.resolve()),
     getPageBlocksTree: vi.fn(),
     getBlock: vi.fn(() => Promise.resolve({})),
   },

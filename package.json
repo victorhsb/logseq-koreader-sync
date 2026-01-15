@@ -3,6 +3,7 @@
   "version": "1.2.5",
   "title": "Logseq Koreader Sync",
   "description": "A koreader to logseq syncing plugin. Reference and read annotations in your notebook.",
+  "type": "module",
   "main": "dist/index.html",
   "targets": {
     "main": false
@@ -39,6 +40,7 @@
     "@vitest/ui": "^4.0.17",
     "buffer": "^6.0.3",
     "eslint": "^9.39.2",
+    "happy-dom": "^16.5.0",
     "jsdom": "^27.4.0",
     "parcel": "^2.16.3",
     "path-browserify": "^1.0.0",
